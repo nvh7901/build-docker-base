@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+  app:
+    container_name: api-production
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www
+    networks:
+      - network-api
+    environment:
+      MARIADB_HOST: db
+      MARIADB_PORT: 3306      
+      MARIADB_DATABASE: db_api
+      MARIADB_USER: root
+      MARIADB_PASSWORD: 123456
+  nginx:
+    container_name: nginx-api
+    build:
+      context: ./
+      dockerfile: nginx.Dockerfile
+    ports:
+      - 9001:80
+    networks:
+      - network-api
+    depends_on:
+      - app
+  db:
+    container_name: db-api
+    image: mariadb:latest
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: 123456
+      MARIADB_DATABASE: db_api
+      MARIADB_USER: root
+      MARIADB_PASSWORD: 123456
+    volumes:
+      - ./data/db-dev:/var/lib/mysql
+    networks:
+      - network-api
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    depends_on:
+      - db
+    ports:
+      - 91:80
+    links:
+      - db
+    environment:
+      PMA_PORT: 3306
+      PMA_HOST: db
+    networks:
+      - network-api
+networks:
+  network-api:
+    driver: bridge
